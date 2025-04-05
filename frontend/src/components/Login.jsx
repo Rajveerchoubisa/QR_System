@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import axios from "axios";
+import { useNavigate } from "react-router-dom";
 
 const Login = () => {
   const [show, setShow] = useState(false);
@@ -7,35 +8,37 @@ const Login = () => {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const navigate = useNavigate();
 
   const handleClick = () => setShow(!show);
 
   const SubmitHandler = async () => {
     setLoading(true);
     setError("");
-
+  
     if (!email || !password) {
       setError("Please fill all the fields.");
       setLoading(false);
       return;
     }
-
+  
     try {
       const config = { headers: { "Content-Type": "application/json" } };
-
+  
       const { data } = await axios.post(
-        "http://localhost:5000/api/vendors/login", 
-        { email, password }, 
+        "http://localhost:5000/api/vendors/login",
+        { email, password },
         config
       );
-
-      alert("Login successful!");
+  
       localStorage.setItem("userInfo", JSON.stringify(data));
       setLoading(false);
-      window.location.href = "/dashboard";
-
+      navigate("/dashboard");
     } catch (error) {
-      console.error("Login Error:", error.response ? error.response.data : error);
+      console.error(
+        "Login Error:",
+        error.response ? error.response.data : error
+      );
       setError(error.response?.data?.message || "Error Occurred");
       setLoading(false);
     }

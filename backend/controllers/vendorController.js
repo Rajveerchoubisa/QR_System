@@ -3,83 +3,83 @@ import jwt from "jsonwebtoken";
 import bcrypt from "bcryptjs";
 import QRCode from "qrcode";
 
+  console.log("🚀 Login route hit!");
 
-export const registerVendor = async (req, res) => {
-  const { name, email, password } = req.body;
 
-  try {
-    // Check if vendor already exists
-    const existingVendor = await Vendor.findOne({ email });
-    if (existingVendor) {
-      return res.status(400).json({ message: "Vendor already exists" });
+
+  export const registerVendor = async (req, res) => {
+    const { name, email, password } = req.body;
+  
+    if (!name || !email || !password) {
+      return res.status(400).json({ message: "Please enter all fields." });
     }
-
-    // Hash the password properly
+  
+    const vendorExists = await Vendor.findOne({ email });
+  
+    if (vendorExists) {
+      return res.status(400).json({ message: "Vendor already exists." });
+    }
+  
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
-
-    // Create a new vendor
-    const vendor = await Vendor.create({ 
-      name, 
-      email, 
-      password: hashedPassword // Store hashed password
+  
+    console.log("🔐 Registering vendor:");
+    console.log("Plain password:", password);
+    console.log("Hashed password:", hashedPassword);
+  
+    const vendor = await Vendor.create({
+      name,
+      email,
+      password: hashedPassword,
     });
-
-    // Generate JWT Token
-    const token = jwt.sign({ id: vendor._id }, process.env.JWT_SECRET, { expiresIn: "7d" });
-
-    res.status(201).json({
-      _id: vendor._id,
-      name: vendor.name,
-      email: vendor.email,
-      token,
-    });
-  } catch (error) {
-    console.error("Error in registration:", error);
-    res.status(500).json({ message: "Server error" });
-  }
-};
+  
+    res.status(201).json({ message: "Vendor registered successfully!" });
+  };
 
 
-export const loginVendor = async (req, res) => {
-  const { email, password } = req.body;
-
-  if (!email || !password) {
-    return res.status(400).json({ message: "Please enter all fields." });
-  }
-
-  try {
-    const vendor = await Vendor.findOne({ email });
-
-    if (!vendor) {
-      return res.status(400).json({ message: "Vendor not found." });
+  export const loginVendor = async (req, res) => {
+    const { email, password } = req.body;
+  
+    console.log("✅ /api/vendors/login hit");
+    console.log("📥 Request Body:", req.body);
+  
+    if (!email || !password) {
+      return res.status(400).json({ message: "Please enter all fields." });
     }
-
-
-    const isMatch = await bcrypt.compare(password, vendor.password);
-
-    if (!isMatch) {
-      console.log("Password comparison failed!");
-      return res.status(401).json({ message: "Invalid credentials." });
+  
+    try {
+      const vendor = await Vendor.findOne({ email });
+  
+      if (!vendor) {
+        return res.status(400).json({ message: "Vendor not found." });
+      }
+  
+      console.log("🧑‍💼 Vendor found:", vendor);
+      console.log("🔑 Entered Password:", password);
+      console.log("🧂 Stored Hashed Password:", vendor.password);
+  
+      const isMatch = await bcrypt.compare(password, vendor.password);
+      console.log("✅ Password Match Result:", isMatch);
+  
+      if (!isMatch) {
+        return res.status(401).json({ message: "Invalid Credentials." });
+      }
+  
+      const token = jwt.sign({ id: vendor._id }, process.env.JWT_SECRET, {
+        expiresIn: "7d",
+      });
+  
+      res.json({
+        _id: vendor._id,
+        name: vendor.name,
+        email: vendor.email,
+        token,
+      });
+    } catch (error) {
+      console.error("Login Error:", error);
+      res.status(500).json({ message: "Internal server error." });
     }
-
-    const token = jwt.sign({ id: vendor._id }, process.env.JWT_SECRET, { expiresIn: "7d" });
-
-    res.json({
-      _id: vendor._id,
-      name: vendor.name,
-      email: vendor.email,
-      token,
-    });
-
-  } catch (error) {
-    console.error("Login Error:", error);
-    res.status(500).json({ message: "Internal server error." });
-  }
-};
-
-
-
+  };
 
 export const addMenuItem = async (req, res) => {
   const { vendorId, name, price } = req.body;
